@@ -2,6 +2,7 @@ console.log("Welcome to Javascript!");
 let currentSong = new Audio();
 let songs = [];  
 let currFolder;
+let currentIndex = 0; // Keep track of the current song index
 
 function secondsToMinutesSeconds(seconds) {
     if (isNaN(seconds) || seconds < 0) {
@@ -20,7 +21,7 @@ function secondsToMinutesSeconds(seconds) {
 async function getSongs(folder) {
     try {
         currFolder = folder;
-        let a = await fetch( '/' + folder + '/');
+        let a = await fetch('/' + folder + '/');
         let response = await a.text();
         let div = document.createElement("div");
         div.innerHTML = response;
@@ -41,18 +42,16 @@ const playMusic = (track, pause = false) => {
     currentSong.src = `/${currFolder}/` + encodeURIComponent(track);
     if (!pause) {
         currentSong.play();
-        play.src = "pause.svg";
+        document.getElementById("play").src = "pause.svg"; // Update play button image
     }
     const decodedTrack = decodeURIComponent(track); 
     document.querySelector(".songinfo").innerHTML = decodedTrack;
-    document.querySelector(".songtime").innerHTML = "00:00/ 00:00";
-
+    document.querySelector(".songtime").innerHTML = "00:00 / 00:00";
 
     let songUL = document.querySelector(".songList ul");
-
     songUL.innerHTML = "";
 
-    for (const song of songs) {
+    for (const [index, song] of songs.entries()) {
         const decodedSong = decodeURIComponent(song); 
         songUL.innerHTML += `<li> 
                             <img class="invert" src="music.svg" alt="">
@@ -66,17 +65,19 @@ const playMusic = (track, pause = false) => {
                             </div> </li>`;
     }
 
-    Array.from(songUL.getElementsByTagName("li")).forEach(e => {
+    Array.from(songUL.getElementsByTagName("li")).forEach((e, index) => {
         e.addEventListener("click", () => {
-            playMusic(track.trim());
+            currentIndex = index; // Update currentIndex when a song is clicked
+            playMusic(songs[index].trim());
         });
     });
+
     return songs;
 }
 
 async function dispayAlbums() {
     try {
-        let a = await fetch(`http://127.0.0.1:5501/songs/`);
+        let a = await fetch('http://127.0.0.1:5501/songs/');
         let response = await a.text();
         let div = document.createElement("div");
         div.innerHTML = response;
@@ -94,14 +95,12 @@ async function dispayAlbums() {
 }
 
 async function main() {
-
-    await getSongs("songs/ncs/");
-
-    playMusic(songs[0], true);
-
+    await getSongs("songs/ncs");
+    if (songs.length > 0) {
+        playMusic(songs[0], true);
+    }
 
     await dispayAlbums();
-
 
     const play = document.getElementById("play");
     const previous = document.getElementById("previous");
@@ -117,12 +116,10 @@ async function main() {
         }
     });
 
-
     currentSong.addEventListener("timeupdate", () => {
-        document.querySelector(".songtime").innerHTML = `${secondsToMinutesSeconds(currentSong.currentTime)}&nbsp;/&nbsp;${secondsToMinutesSeconds(currentSong.duration)}`;
+        document.querySelector(".songtime").innerHTML = `${secondsToMinutesSeconds(currentSong.currentTime)} / ${secondsToMinutesSeconds(currentSong.duration)}`;
         document.querySelector(".circle").style.left = (currentSong.currentTime / currentSong.duration) * 100 + "%";
     });
-
 
     document.querySelector(".seekbar").addEventListener("click", e => {
         let percent = (e.offsetX / e.target.getBoundingClientRect().width) * 100;
@@ -138,33 +135,32 @@ async function main() {
         document.querySelector(".left").style.left = "-120%";
     });
 
-
     previous.addEventListener("click", () => {
-        let index = songs.indexOf(currentSong.src.split("/").slice(-1)[0]);
-        if ((index - 1) >= 0) {
-            playMusic(songs[index - 1]); 
+        if (currentIndex > 0) {
+            currentIndex--;
+            playMusic(songs[currentIndex]);
         }
     });
 
- 
     next.addEventListener("click", () => {
-        let index = songs.indexOf(currentSong.src.split("/").slice(-1)[0]);
-        if ((index + 1) < songs.length) {
-            playMusic(songs[index + 1]);
+        if (currentIndex < songs.length - 1) {
+            currentIndex++;
+            playMusic(songs[currentIndex]);
         }
     });
-
 
     document.querySelector(".range input").addEventListener("input", (e) => {
         console.log("Setting volume to", e.target.value, "/100");
         currentSong.volume = e.target.value / 100;
     });
 
-
     Array.from(document.getElementsByClassName("card")).forEach(card => {
         card.addEventListener("click", async () => {
             await getSongs(`songs/${card.dataset.folder}`);
-            playMusic(songs[0], true);
+            if (songs.length > 0) {
+                currentIndex = 0; // Reset to first song in the new folder
+                playMusic(songs[0], true);
+            }
         });
     });
 }
