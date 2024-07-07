@@ -1,6 +1,6 @@
 console.log("Welcome to Javascript!");
 let currentSong = new Audio();
-let songs = [];  
+let songs = [];
 let currFolder;
 let currentIndex = 0; // Keep track of the current song index
 
@@ -26,7 +26,7 @@ async function getSongs(folder) {
         let div = document.createElement("div");
         div.innerHTML = response;
         let as = div.getElementsByTagName("a");
-        songs = [];  
+        songs = [];
         for (let index = 0; index < as.length; index++) {
             const element = as[index];
             if (element.href.endsWith(".mp3")) {
@@ -44,7 +44,7 @@ const playMusic = (track, pause = false) => {
         currentSong.play();
         document.getElementById("play").src = "pause.svg"; // Update play button image
     }
-    const decodedTrack = decodeURIComponent(track); 
+    const decodedTrack = decodeURIComponent(track);
     document.querySelector(".songinfo").innerHTML = decodedTrack;
     document.querySelector(".songtime").innerHTML = "00:00 / 00:00";
 
@@ -52,12 +52,12 @@ const playMusic = (track, pause = false) => {
     songUL.innerHTML = "";
 
     for (const [index, song] of songs.entries()) {
-        const decodedSong = decodeURIComponent(song); 
+        const decodedSong = decodeURIComponent(song);
         songUL.innerHTML += `<li> 
                             <img class="invert" src="music.svg" alt="">
                             <div class="info">
                                 <div> ${decodedSong.replaceAll("%20", " ")} </div>
-                                <div>Hasan</div>
+                                
                             </div>
                             <div class="playnow">
                                 <span class="playnow">Play Now</span>
@@ -75,7 +75,7 @@ const playMusic = (track, pause = false) => {
     return songs;
 }
 
-async function dispayAlbums() {
+async function displayAlbums() {
     try {
         let a = await fetch('http://127.0.0.1:5501/songs/');
         let response = await a.text();
@@ -83,10 +83,19 @@ async function dispayAlbums() {
         div.innerHTML = response;
 
         let anchors = div.getElementsByTagName("a");
-        
-        Array.from(anchors).forEach(e => {
-            if (e.href.includes("/songs")) {
-                console.log(e.href.split("/").slice(-1)[0]);
+
+        Array.from(anchors).forEach(async e => {
+            if (e.href.includes("/songs/")) {
+                let folder = e.href.split("/").slice(-2, -1)[0]; // get the name of the folder
+                let infoUrl = `http://127.0.0.1:5501/songs/${folder}/info.json`;
+                console.log(`Fetching info from: ${infoUrl}`);
+                try {
+                    let a = await fetch(infoUrl);
+                    let response = await a.json();
+                    console.log(response);
+                } catch (jsonError) {
+                    console.error(`Failed to fetch or parse JSON for folder ${folder}:`, jsonError);
+                }
             }
         });
     } catch (error) {
@@ -100,7 +109,7 @@ async function main() {
         playMusic(songs[0], true);
     }
 
-    await dispayAlbums();
+    await displayAlbums();
 
     const play = document.getElementById("play");
     const previous = document.getElementById("previous");
