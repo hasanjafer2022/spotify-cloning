@@ -30,7 +30,7 @@ async function getSongs(folder) {
         for (let index = 0; index < as.length; index++) {
             const element = as[index];
             if (element.href.endsWith(".mp3")) {
-                songs.push(decodeURIComponent(element.href.split(`/${folder}/`)[1]));
+                songs.push(decodeURIComponent(element.href.split(`${folder}`)[1]));
             }
         }
     } catch (error) {
@@ -57,7 +57,7 @@ const playMusic = (track, pause = false) => {
                             <img class="invert" src="music.svg" alt="">
                             <div class="info">
                                 <div> ${decodedSong.replaceAll("%20", " ")} </div>
-                                
+                                <div>Hasan</div>
                             </div>
                             <div class="playnow">
                                 <span class="playnow">Play Now</span>
@@ -75,7 +75,7 @@ const playMusic = (track, pause = false) => {
     return songs;
 }
 
-async function displayAlbums() {
+async function dispayAlbums() {
     try {
         let a = await fetch('http://127.0.0.1:5501/songs/');
         let response = await a.text();
@@ -85,17 +85,14 @@ async function displayAlbums() {
         let anchors = div.getElementsByTagName("a");
 
         Array.from(anchors).forEach(async e => {
-            if (e.href.includes("/songs/")) {
-                let folder = e.href.split("/").slice(-2, -1)[0]; // get the name of the folder
-                let infoUrl = `http://127.0.0.1:5501/songs/${folder}/info.json`;
-                console.log(`Fetching info from: ${infoUrl}`);
-                try {
-                    let a = await fetch(infoUrl);
-                    let response = await a.json();
-                    console.log(response);
-                } catch (jsonError) {
-                    console.error(`Failed to fetch or parse JSON for folder ${folder}:`, jsonError);
-                }
+            if (e.href.includes("/songs")) {
+                console.log(e.href.split("/").slice(-1)[0]);
+                let folder = e.href.split("/").slice(-1)[0];
+                console.log(folder);
+                // Get the metadata of the folder
+                let a = await fetch(`http://127.0.0.1:5501/${folder}/info.json`);
+                let response = await a.json();
+                console.log(response);
             }
         });
     } catch (error) {
@@ -109,7 +106,7 @@ async function main() {
         playMusic(songs[0], true);
     }
 
-    await displayAlbums();
+    await dispayAlbums();
 
     const play = document.getElementById("play");
     const previous = document.getElementById("previous");
